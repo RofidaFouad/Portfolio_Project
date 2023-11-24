@@ -1,0 +1,189 @@
+SELECT
+  *
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+where continent is not null
+ORDER BY
+  3,4
+ 
+-- SELECT
+--   * 
+-- FROM
+--   `portfolio-project-395009.Covid19.Covid_Vaccinations` 
+-- ORDER BY
+--   3,4
+
+
+SELECT 
+  location,
+  date,
+  total_cases,
+  new_cases,
+  total_deaths,
+  population
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+ORDER BY
+  1, 2 
+
+-- looking AT total cases vs total deaths
+-- shows likelihood of dying if you contract covid in your country
+
+SELECT
+  location,
+  date,
+  total_cases,
+  total_deaths,
+  population,
+  ((total_deaths/total_cases)*100) AS deth_percentege
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+where location LIKE '%States%'
+ORDER BY
+  1,2
+
+-- looking at Total Cases vs Population
+
+SELECT
+  location,
+  date,
+  total_cases,
+  population,
+  ((total_cases/population)*100) AS Infection_percentege
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+where location LIKE '%States%'
+ORDER BY
+  1,2
+
+--looking at companies with highest infection rate compared to population 
+
+
+SELECT
+  location,
+  Max(total_cases) as Highestinfectioncount,
+  population,
+  MAX((total_cases/population)*100) AS Infection_percentege
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+-- where location LIKE '%States%'
+GROUP BY
+  location,
+  population
+ORDER BY
+  Infection_percentege
+
+-- showing countries with highest death count per population 
+SELECT
+  location,
+  Max(total_deaths) as Total_death_count,
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+where continent is not null
+GROUP BY
+  location
+ORDER BY
+  Total_death_count desc
+
+-- showing continent with highest death count per population
+
+SELECT
+  continent,
+  Max(total_deaths) as Total_death_count,
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+where continent is not null
+GROUP BY
+  continent
+ORDER BY
+  Total_death_count desc
+
+
+
+-- showig continents with the highest death count per population 
+
+SELECT
+  continent,
+  Max(total_deaths) as Total_death_count,
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+where continent is not null
+GROUP BY
+  continent
+ORDER BY
+  Total_death_count desc
+
+
+--Golbal numbers
+SELECT
+  date,
+  sum(new_cases) as Total_cases,
+  sum(cast(new_deaths as int)) as Total_Deaths,
+  CASE WHEN sum(new_cases) = 0 THEN NULL
+       ELSE (sum(cast(new_deaths as int))/sum(new_cases))*100
+  END AS death_percentage
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+WHERE continent IS NOT NULL 
+GROUP BY date
+ORDER BY 1, 2;
+
+--- total global numbers
+SELECT
+  sum(new_cases) as Total_cases,
+  sum(cast(new_deaths as int)) as Total_Deaths,
+  CASE WHEN sum(new_cases) = 0 THEN NULL
+       ELSE (sum(cast(new_deaths as int))/sum(new_cases))*100
+  END AS death_percentage
+FROM
+  `portfolio-project-395009.Covid19.Covid_Death`
+WHERE continent IS NOT NULL
+ORDER BY 1, 2;
+
+
+
+
+-- looking at total population vs vaccinations
+
+select
+  Death.continent,
+  Death.location,
+  Death.date,
+  Death.population,
+  Vac.new_vaccinations,
+  sum(cast(Vac.new_vaccinations as int)) over (partition by Death.location order by
+   Death.location,Death.date) as rolling_people_vaccinated,
+  
+from `portfolio-project-395009.Covid19.Covid_Death` Death
+join `portfolio-project-395009.Covid19.Covid_Vaccinations` Vac
+     on Death.location = Vac.location
+     and Death.date = Vac.date
+WHERE Death.continent IS NOT NULL
+ORDER BY 2,3
+
+----------------------
+
+WITH popVSvac AS (
+  SELECT
+    Death.continent,
+    Death.location,
+    Death.date,
+    Death.population,
+    Vac.new_vaccinations,
+    SUM(CAST(Vac.new_vaccinations AS int)) OVER (PARTITION BY Death.location ORDER BY Death.location, Death.date) AS rolling_people_vaccinated
+  FROM `portfolio-project-395009.Covid19.Covid_Death` Death
+  JOIN `portfolio-project-395009.Covid19.Covid_Vaccinations` Vac
+    ON Death.location = Vac.location
+    AND Death.date = Vac.date
+  WHERE Death.continent IS NOT NULL
+)
+
+SELECT *, (rolling_people_vaccinated/population)*100 as RPV_Percentage
+FROM popVSvac
+where rolling_people_vaccinated is not null;
+
+
+
+
+
+
